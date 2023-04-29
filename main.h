@@ -1,3 +1,2 @@
 #include "Python.h"
-
-PyTypeObject my_number_Type;
+#include "my_number.h"

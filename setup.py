@@ -1,6 +1,6 @@
 from distutils.core import setup, Extension
 
-sources = ['main.c']
+sources = ['main.c', 'my_number.c']
 name = 'more_numbers'
 description = 'A module for working with numbers in different number systems with long arithmetic.'
 module1 = Extension(name, sources=sources)

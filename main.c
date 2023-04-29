@@ -1,10 +1,5 @@
 #include "main.h"
 
-PyObject* new_number_from_py(PyObject* self, PyObject* args) {
-    Py_INCREF(Py_None);
-    return Py_None;
-}
-
 // методы модуля
 static PyMethodDef own_methods[] = {
     {
@@ -25,17 +20,6 @@ static PyModuleDef simple_module = {
     own_methods
 };
 
-PyTypeObject my_number_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "number",
-    .tp_basicsize = 0,
-    .tp_dealloc = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_doc = "A new number in the specified number system",
-    .tp_methods = 0,
-    .tp_as_number = 0,
-};
-
 
 // инициализация модуля
 PyMODINIT_FUNC PyInit_more_numbers(void)
@@ -52,5 +36,3 @@ PyMODINIT_FUNC PyInit_more_numbers(void)
 
     return module;
 }
-
-
