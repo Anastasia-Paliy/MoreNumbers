@@ -1,8 +1,9 @@
 #include "my_number.h"
 
 PyObject* new_number_from_py(PyObject* self, PyObject* args) {
-    Py_INCREF(Py_None);
-    return Py_None;
+    my_number* a = PyObject_NEW(my_number, &my_number_Type);
+    a->base = 10;
+    return (PyObject*)a;
 }
 
 PyTypeObject my_number_Type = {
