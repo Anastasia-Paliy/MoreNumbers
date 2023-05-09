@@ -6,7 +6,7 @@ typedef struct {
     PyObject_HEAD
     int base;
     int *number;
-
+    int length;
 } my_number;
 
 PyObject* new_number_from_py(PyObject* self, PyObject* args);
