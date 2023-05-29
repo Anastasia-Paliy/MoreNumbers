@@ -7,6 +7,7 @@ typedef struct {
     int base;
     int *number;
     int length;
+    int sign;
 } my_number;
 
 PyObject* new_number_from_py(PyObject* self, PyObject* args);

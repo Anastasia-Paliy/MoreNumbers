@@ -47,17 +47,37 @@ static int *dividing_long_by_short(int *array, int length, int b, int base, int 
     return res;
 }
 
-static int *get_array_of_digits(PyObject *str, int base, int *new_len) {
+static void *get_array_of_digits(PyObject *str, int base, my_number* a) {
     long length =  PyObject_Length(str);
-    int *array = (int*)malloc(sizeof(int) * length);
-    for (int i = 0; i < length; ++i) {
-        PyObject *pItem = PyObject_GetItem(str, Py_BuildValue("i", i));
-        PyObject *encodedString = PyUnicode_AsEncodedString(pItem, "UTF-8", "strict");
-        char* s = PyBytes_AsString(encodedString);
-        array[i] = s[0] - 48;
+    PyObject *pItem = PyObject_GetItem(str, Py_BuildValue("i", 0));
+    PyObject *encodedString = PyUnicode_AsEncodedString(pItem, "UTF-8", "strict");
+    char* s = PyBytes_AsString(encodedString);
+    int *array;
+    if (s[0]=='-') {
+        a->sign = -1;
+        array = (int*)malloc(sizeof(int) * (length-1));
+        for (int i = 0; i < length-1; ++i) {
+            pItem = PyObject_GetItem(str, Py_BuildValue("i", i));
+            encodedString = PyUnicode_AsEncodedString(pItem, "UTF-8", "strict");
+            s = PyBytes_AsString(encodedString);
+            array[i] = s[0] - 48;
+        }
+    } else {
+        a->sign = 1;
+        array = (int*)malloc(sizeof(int) * length);
+        for (int i = 0; i < length; ++i) {
+            pItem = PyObject_GetItem(str, Py_BuildValue("i", i));
+            encodedString = PyUnicode_AsEncodedString(pItem, "UTF-8", "strict");
+            s = PyBytes_AsString(encodedString);
+            array[i] = s[0] - 48;
+        }
     }
-    int* res = dividing_long_by_short(array, length, base, 10, new_len);
-    return res;
+    for (int i = 0; i < length; ++i) {
+        pItem = PyObject_GetItem(str, Py_BuildValue("i", i));
+        encodedString = PyUnicode_AsEncodedString(pItem, "UTF-8", "strict");
+        s = PyBytes_AsString(encodedString);
+    }
+    a->number = dividing_long_by_short(array, length, base, 10, &(a->length));
 }
 
 PyObject* new_number_from_py(PyObject* self, PyObject* args) {
@@ -79,7 +99,7 @@ PyObject* new_number_from_py(PyObject* self, PyObject* args) {
     }
     str = PyObject_Repr(obj);
     a->base = base;
-    a->number = get_array_of_digits(str, base, &(a->length));
+    get_array_of_digits(str, base, a);
     return (PyObject*)a;
 }
 
@@ -92,8 +112,17 @@ void delete_my_number(my_number* self) {
 PyObject* my_number_repr(PyObject* self)
 {
     my_number* a = (my_number*)self;
-    char *str = (char*)malloc(sizeof(char) * (a->length + 1));
-    for (int i = 0; i < a->length; ++i) {
+    char *str;
+    int i0;
+    if (a->sign == 1) {
+        str = (char*)malloc(sizeof(char) * (a->length + 1));
+        i0 = 0;
+    } else {
+        str = (char*)malloc(sizeof(char) * (a->length + 2));
+        i0 = 1;
+        str[0] = '-';
+    }
+    for (int i = i0; i < a->length; ++i) {
         if (a->number[i] < 10) {
             str[i] = a->number[i] + 48;
         } else {
