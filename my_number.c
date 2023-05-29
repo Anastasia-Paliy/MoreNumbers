@@ -1,10 +1,12 @@
 #include "my_number.h"
 
+static int *dividing_long_by_short(int *array, int length, int b, int base);
+
 static PyMethodDef number_methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-static int *get_array_of_digits(PyObject *str, int base) {
+static int *get_array_of_digits(PyObject *str, int base, int *new_len) {
     long length =  PyObject_Length(str);
     int *array = (int*)malloc(sizeof(int) * length);
     for (int i = 0; i < length; ++i) {
@@ -13,7 +15,49 @@ static int *get_array_of_digits(PyObject *str, int base) {
         char* s = PyBytes_AsString(encodedString);
         array[i] = s[0] - 48;
     }
-    return array;
+    int* res = dividing_long_by_short(array, length, base, 10, new_len);
+    return res;
+}
+
+static void extend_array(int **array, int length) {
+    int *array1 = *array;
+    int *array2 = (int*)malloc(sizeof(int) * length * 2);
+    for (int i = 0; i < length; ++i) {
+        array2[i] = array1[i];
+    }
+
+    free(array1);
+    *array = array2;
+}
+
+static int *dividing_long_by_short(int *array, int length, int b, int base, int *new_len) {
+    int *array2 = (int*)malloc(sizeof(int) * length);
+    int i = 0, size = length, c = 0;
+    while (c < length) {
+        int carry = 0;
+        for (int j = length - 1 - c; j>=0; --j) {
+            int cur = array[j] + carry * base;
+            array[j] = cur / b;
+            carry = cur % b;
+        }
+        if (array[length - 1 - c] == 0) c++;
+
+
+        if (i >= size) {
+            extend_array(&array2, size);
+            size *= 2;
+        }
+
+        array2[i] = carry;
+        i++;
+    }
+    int *res = (int*)malloc(sizeof(int) * i);
+    for (int j = 0; j < i; ++j) {
+        res[i - 1 - j] = array2[j];
+    }
+    *new_len = i;
+    free(array2);
+    return res;
 }
 
 PyObject* new_number_from_py(PyObject* self, PyObject* args) {
@@ -35,8 +79,7 @@ PyObject* new_number_from_py(PyObject* self, PyObject* args) {
     }
     str = PyObject_Repr(obj);
     a->base = base;
-    a->number = get_array_of_digits(str, base);
-    a->length = PyObject_Length(str);
+    a->number = get_array_of_digits(str, base, &(a->length));
     return (PyObject*)a;
 }
 
@@ -49,7 +92,7 @@ void delete_my_number(my_number* self) {
 PyObject* my_number_repr(PyObject* self)
 {
     my_number* a = (my_number*)self;
-    char *str = (char*)malloc(sizeof(char) * (a->length));
+    char *str = (char*)malloc(sizeof(char) * (a->length + 1));
     for (int i = 0; i < a->length; ++i) {
         if (a->number[i] < 10) {
             str[i] = a->number[i] + 48;
@@ -57,7 +100,7 @@ PyObject* my_number_repr(PyObject* self)
             str[i] = a->number[i] - 10 + 65;
         }
     }
-
+    str[a->length] = '\0';
     PyObject *repr = PyUnicode_FromString(str);
     free(str);
     return repr;
