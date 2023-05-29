@@ -6,19 +6,6 @@ static PyMethodDef number_methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-static int *get_array_of_digits(PyObject *str, int base, int *new_len) {
-    long length =  PyObject_Length(str);
-    int *array = (int*)malloc(sizeof(int) * length);
-    for (int i = 0; i < length; ++i) {
-        PyObject *pItem = PyObject_GetItem(str, Py_BuildValue("i", i));
-        PyObject *encodedString = PyUnicode_AsEncodedString(pItem, "UTF-8", "strict");
-        char* s = PyBytes_AsString(encodedString);
-        array[i] = s[0] - 48;
-    }
-    int* res = dividing_long_by_short(array, length, base, 10, new_len);
-    return res;
-}
-
 static void extend_array(int **array, int length) {
     int *array1 = *array;
     int *array2 = (int*)malloc(sizeof(int) * length * 2);
@@ -35,12 +22,12 @@ static int *dividing_long_by_short(int *array, int length, int b, int base, int 
     int i = 0, size = length, c = 0;
     while (c < length) {
         int carry = 0;
-        for (int j = length - 1 - c; j>=0; --j) {
+        for (int j = 0; j < length; ++j) {
             int cur = array[j] + carry * base;
             array[j] = cur / b;
             carry = cur % b;
         }
-        if (array[length - 1 - c] == 0) c++;
+        while (array[c] == 0) c++;
 
 
         if (i >= size) {
@@ -57,6 +44,19 @@ static int *dividing_long_by_short(int *array, int length, int b, int base, int 
     }
     *new_len = i;
     free(array2);
+    return res;
+}
+
+static int *get_array_of_digits(PyObject *str, int base, int *new_len) {
+    long length =  PyObject_Length(str);
+    int *array = (int*)malloc(sizeof(int) * length);
+    for (int i = 0; i < length; ++i) {
+        PyObject *pItem = PyObject_GetItem(str, Py_BuildValue("i", i));
+        PyObject *encodedString = PyUnicode_AsEncodedString(pItem, "UTF-8", "strict");
+        char* s = PyBytes_AsString(encodedString);
+        array[i] = s[0] - 48;
+    }
+    int* res = dividing_long_by_short(array, length, base, 10, new_len);
     return res;
 }
 
@@ -106,6 +106,14 @@ PyObject* my_number_repr(PyObject* self)
     return repr;
 }
 
+static PyNumberMethods my_number_as_number = {
+    .nb_add = 0,
+    .nb_negative = 0,
+    .nb_subtract = 0,
+    .nb_multiply = 0,
+    .nb_true_divide = 0,
+};
+
 PyTypeObject my_number_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "number",
@@ -115,5 +123,5 @@ PyTypeObject my_number_Type = {
     .tp_doc = "A new number in the specified number system",
     .tp_methods = number_methods,
     .tp_repr = my_number_repr,
-    .tp_as_number = 0,
+    .tp_as_number = &my_number_as_number,
 };
