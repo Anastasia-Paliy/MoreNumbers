@@ -53,31 +53,16 @@ static void *get_array_of_digits(PyObject *str, int base, my_number* a) {
     PyObject *encodedString = PyUnicode_AsEncodedString(pItem, "UTF-8", "strict");
     char* s = PyBytes_AsString(encodedString);
     int *array;
-    if (s[0]=='-') {
-        a->sign = -1;
-        array = (int*)malloc(sizeof(int) * (length-1));
-        for (int i = 0; i < length-1; ++i) {
-            pItem = PyObject_GetItem(str, Py_BuildValue("i", i));
-            encodedString = PyUnicode_AsEncodedString(pItem, "UTF-8", "strict");
-            s = PyBytes_AsString(encodedString);
-            array[i] = s[0] - 48;
-        }
-    } else {
-        a->sign = 1;
-        array = (int*)malloc(sizeof(int) * length);
-        for (int i = 0; i < length; ++i) {
-            pItem = PyObject_GetItem(str, Py_BuildValue("i", i));
-            encodedString = PyUnicode_AsEncodedString(pItem, "UTF-8", "strict");
-            s = PyBytes_AsString(encodedString);
-            array[i] = s[0] - 48;
-        }
-    }
-    for (int i = 0; i < length; ++i) {
-        pItem = PyObject_GetItem(str, Py_BuildValue("i", i));
+    int bo = (s[0]=='-');
+    array = (int*)malloc(sizeof(int) * (length-bo));
+    for (int i = 0; i < length-bo; ++i) {
+        pItem = PyObject_GetItem(str, Py_BuildValue("i", i+bo));
         encodedString = PyUnicode_AsEncodedString(pItem, "UTF-8", "strict");
         s = PyBytes_AsString(encodedString);
+        array[i] = s[0] - 48;
     }
-    a->number = dividing_long_by_short(array, length, base, 10, &(a->length));
+    a->sign = bo ? -1 : 1;
+    a->number = dividing_long_by_short(array, length-bo, base, 10, &(a->length));
 }
 
 PyObject* new_number_from_py(PyObject* self, PyObject* args) {
@@ -113,23 +98,19 @@ PyObject* my_number_repr(PyObject* self)
 {
     my_number* a = (my_number*)self;
     char *str;
-    int i0;
-    if (a->sign == 1) {
-        str = (char*)malloc(sizeof(char) * (a->length + 1));
-        i0 = 0;
-    } else {
-        str = (char*)malloc(sizeof(char) * (a->length + 2));
-        i0 = 1;
+    int i0 = (a->sign != 1);
+    str = (char*)malloc(sizeof(char) * (a->length + 1 + i0));
+    if (i0) {
         str[0] = '-';
     }
-    for (int i = i0; i < a->length; ++i) {
+    str[a->length+i0] = '\0';
+    for (int i = 0; i < a->length; ++i) {
         if (a->number[i] < 10) {
-            str[i] = a->number[i] + 48;
+            str[i+i0] = a->number[i] + 48;
         } else {
-            str[i] = a->number[i] - 10 + 65;
+            str[i+i0] = a->number[i] - 10 + 65;
         }
     }
-    str[a->length] = '\0';
     PyObject *repr = PyUnicode_FromString(str);
     free(str);
     return repr;
