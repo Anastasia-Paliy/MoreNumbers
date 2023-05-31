@@ -116,8 +116,68 @@ PyObject* my_number_repr(PyObject* self)
     return repr;
 }
 
+PyObject* _my_number_add(my_number* a, my_number* b) {
+    my_number* c = PyObject_NEW(my_number, &my_number_Type);
+    int al = a->length, bl = b->length;
+    int len = (al > bl ? al : bl) + 1, base = a->base;
+    int *array = (int*)malloc(sizeof(int) * len);
+    array[0] = 0;
+    int l = 0;
+    int carry = 0;
+    for (int i = 0; i < len; ++i) {
+        int t = ((al-1-i) < 0 ? 0 : a->number[al-1-i]) + ((bl-1-i) < 0 ? 0 : b->number[bl-1-i]) + carry;
+        array[len - 1 - i] = (t % base);
+        carry = t / base;
+    }
+    if (array[0] == 0) {
+        len--;
+        int *array2 = (int*)malloc(sizeof(int) * len);
+        for (int i = 0; i < len; ++i) {
+            array2[i] = array[1 + i];
+        }
+        free(array);
+        array = array2;
+    }
+//    for (int i = 0; i < len; ++i) {
+//        printf("%d\n",array[i]);
+//    }
+    c->number = array;
+    c->length = len;
+    c->sign = 1;
+    c->base = base;
+    return c;
+}
+
+my_number* _my_number_sub(my_number* a, my_number* b) {
+
+
+}
+
+PyObject* my_number_add(PyObject* self, PyObject* another) {
+    my_number *a = (my_number*)self, *b = (my_number*)another;
+    if (a->base != b->base) {
+        printf("Основания должны быть одинаковые\n");
+        return NULL;
+    }
+    if (a->sign > 0 && b->sign > 0)
+        return _my_number_add(a, b);
+    if (a->sign > 0 && b->sign < 0)
+        return _my_number_sub(a, b);
+    if (a->sign < 0 && b->sign > 0) {
+        my_number* c = _my_number_sub(b, a);
+        c->sign = -1;
+        return c;
+    }
+    if (a->sign < 0 && b->sign < 0) {
+        printf("assdfsd\n");
+        my_number* c = _my_number_add(a, b);
+        c->sign = -1;
+        return c;
+    }
+}
+
 static PyNumberMethods my_number_as_number = {
-    .nb_add = 0,
+    .nb_add = my_number_add,
     .nb_negative = 0,
     .nb_subtract = 0,
     .nb_multiply = 0,
