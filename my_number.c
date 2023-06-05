@@ -52,7 +52,7 @@ static int *dividing_long_by_short(int *array, int length, int b, int base, int 
 
 
 static void *get_array_of_digits(PyObject *str, int base, my_number* a) {
-    long length =  PyObject_Length(str);
+    long length = PyObject_Length(str);
     PyObject *pItem = PyObject_GetItem(str, Py_BuildValue("i", 0));
     PyObject *encodedString = PyUnicode_AsEncodedString(pItem, "UTF-8", "strict");
     char* s = PyBytes_AsString(encodedString);
@@ -242,9 +242,6 @@ my_number* _my_number_sub(my_number* a, my_number* b) {
         free(array);
         array = array2;
     }
-//    for (int i = 0; i < len; ++i) {
-//        printf("%d\n",array[i]);
-//    }
     c->number = array;
     c->length = len;
     c->base = base;
@@ -288,12 +285,23 @@ PyObject* my_number_sub(PyObject* self, PyObject* another) {
 }
 
 
+PyObject* my_number_length(PyObject* self) {
+    PyObject* a = my_number_repr(self);
+    return PyObject_Length(a);
+}
+
+
 static PyNumberMethods my_number_as_number = {
     .nb_add = my_number_add,
     .nb_negative = my_number_negative,
     .nb_subtract = my_number_sub,
     .nb_multiply = 0,
     .nb_absolute = my_number_absolute,
+};
+
+
+static PyMappingMethods my_number_as_mapping = {
+    .mp_length = my_number_length,
 };
 
 
@@ -308,4 +316,5 @@ PyTypeObject my_number_Type = {
     .tp_repr = my_number_repr,
     .tp_as_number = &my_number_as_number,
     .tp_richcompare = my_number_tp_richcompare,
+    .tp_as_mapping =  &my_number_as_mapping
 };
