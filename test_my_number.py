@@ -1,9 +1,6 @@
 import more_numbers as mn
 
-a = mn.new_number(-1, 2)
-
-for i in range(16):
-    b = mn.new_number(-i-1, 2)
-    print(b)
-    print(a + b)
+a = mn.new_number(13543545345345345340, 10)
+b = mn.new_number(35453434354545345684646345555555555555555555555555555, 10)
+print(a - b)
 

@@ -116,6 +116,34 @@ PyObject* my_number_repr(PyObject* self)
     return repr;
 }
 
+int my_number_comparator(my_number* a, my_number* b) {
+    if (a->sign > 0 && b->sign < 0) return 0;
+    if (a->sign < 0 && b->sign > 0) return 1;
+    if (a->sign > 0 && b->sign > 0 && a->length > b->length) return 0;
+    if (a->sign > 0 && b->sign > 0 && a->length < b->length) return 1;
+    if (a->sign < 0 && b->sign < 0 && a->length > b->length) return 1;
+    if (a->sign < 0 && b->sign < 0 && a->length < b->length) return 0;
+
+    int b0 = 0;
+    for (int i = a->length; i >= 0; --i) {
+        if (a->number[i] < b->number[i]) {
+            b0 = 1;
+        }
+    }
+    return (a->sign > 0 && b->sign > 0) ? b0 : !b0;
+}
+
+PyObject* my_number_tp_richcompare(PyObject *self, PyObject *other, int op) {
+    int b1 = my_number_comparator(self, other);
+    int b2 = my_number_comparator(other, self);
+    if (op == Py_LT) return b1 ? Py_True : Py_False;
+    if (op == Py_LE) return !b2 ? Py_True : Py_False;
+    if (op == Py_EQ) return (!b1 && !b2) ? Py_True : Py_False;
+    if (op == Py_NE) return (b1 || b2) ? Py_True : Py_False;
+    if (op == Py_GT) return b2 ? Py_True : Py_False;
+    if (op == Py_GE) return !b1 ? Py_True : Py_False;
+}
+
 PyObject* _my_number_add(my_number* a, my_number* b) {
     my_number* c = PyObject_NEW(my_number, &my_number_Type);
     int al = a->length, bl = b->length;
@@ -148,9 +176,70 @@ PyObject* _my_number_add(my_number* a, my_number* b) {
     return c;
 }
 
+PyObject* my_number_absolute(PyObject* self) {
+    my_number* a = (my_number*)self;
+    my_number* c = PyObject_NEW(my_number, &my_number_Type);
+    c->sign = 1;
+    c->length = a->length;
+    c->base = a->base;
+    c->number = malloc(sizeof(int) * (a->length));
+    for (int i = 0; i < c->length; ++i) c->number[i] = a->number[i];
+    return c;
+}
+
+PyObject* my_number_negative(PyObject* self) {
+    my_number* a = (my_number*)self;
+    my_number* c = PyObject_NEW(my_number, &my_number_Type);
+    c->sign = -a->sign;
+    c->length = a->length;
+    c->base = a->base;
+    c->number = malloc(sizeof(int) * (a->length));
+    for (int i = 0; i < c->length; ++i) c->number[i] = a->number[i];
+    return c;
+}
+
 my_number* _my_number_sub(my_number* a, my_number* b) {
-
-
+    my_number* c = PyObject_NEW(my_number, &my_number_Type);
+    int co = my_number_comparator(a, b);
+    if (co) {
+        my_number* t = a;
+        a = b;
+        b = t;
+    }
+    int al = a->length, bl = b->length;
+    int len = (al > bl ? al : bl), base = a->base;
+    int *array = (int*)malloc(sizeof(int) * len);
+    int l = 0;
+    int carry = 0;
+    for (int i = 0; i < len; ++i) {
+        int t = ((al-1-i) < 0 ? 0 : a->number[al-1-i]) - ((bl-1-i) < 0 ? 0 : b->number[bl-1-i]) + carry;
+        if (t < 0) {
+            t += base;
+            carry = -1;
+        } else {
+            carry = 0;
+        }
+        array[len - 1 - i] = t;
+    }
+    int cc = 0;
+    while(array[cc] == 0) cc++;
+    if (array[0] == 0) {
+        len -= cc;
+        int *array2 = (int*)malloc(sizeof(int) * len);
+        for (int i = 0; i < len; ++i) {
+            array2[i] = array[cc + i];
+        }
+        free(array);
+        array = array2;
+    }
+//    for (int i = 0; i < len; ++i) {
+//        printf("%d\n",array[i]);
+//    }
+    c->number = array;
+    c->length = len;
+    c->base = base;
+    c->sign = co ? -1 : 1;
+    return c;
 }
 
 PyObject* my_number_add(PyObject* self, PyObject* another) {
@@ -161,27 +250,37 @@ PyObject* my_number_add(PyObject* self, PyObject* another) {
     }
     if (a->sign > 0 && b->sign > 0)
         return _my_number_add(a, b);
-    if (a->sign > 0 && b->sign < 0)
-        return _my_number_sub(a, b);
+    if (a->sign > 0 && b->sign < 0) {
+        b->sign = 1;
+        my_number* c = _my_number_sub(a, b);
+        b->sign = -1;
+        return c;
+    }
     if (a->sign < 0 && b->sign > 0) {
-        my_number* c = _my_number_sub(b, a);
-        c->sign = -1;
+        a->sign = 1;
+        my_number* c = _my_number_sub(a, b);
+        a->sign = -1;
+        c->sign = -c->sign;
         return c;
     }
     if (a->sign < 0 && b->sign < 0) {
-        printf("assdfsd\n");
         my_number* c = _my_number_add(a, b);
         c->sign = -1;
         return c;
     }
 }
 
+PyObject* my_number_sub(PyObject* self, PyObject* another) {
+    my_number *a = (my_number*)self, *b = my_number_negative(another);
+    return my_number_add(a, b);
+}
+
 static PyNumberMethods my_number_as_number = {
     .nb_add = my_number_add,
-    .nb_negative = 0,
-    .nb_subtract = 0,
+    .nb_negative = my_number_negative,
+    .nb_subtract = my_number_sub,
     .nb_multiply = 0,
-    .nb_true_divide = 0,
+    .nb_absolute = my_number_absolute,
 };
 
 PyTypeObject my_number_Type = {
@@ -194,4 +293,5 @@ PyTypeObject my_number_Type = {
     .tp_methods = number_methods,
     .tp_repr = my_number_repr,
     .tp_as_number = &my_number_as_number,
+    .tp_richcompare = my_number_tp_richcompare,
 };
