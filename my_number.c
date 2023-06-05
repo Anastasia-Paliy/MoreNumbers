@@ -2,9 +2,11 @@
 
 static int *dividing_long_by_short(int *array, int length, int b, int base);
 
+
 static PyMethodDef number_methods[] = {
     {NULL, NULL, 0, NULL}
 };
+
 
 static void extend_array(int **array, int length) {
     int *array1 = *array;
@@ -16,6 +18,7 @@ static void extend_array(int **array, int length) {
     free(array1);
     *array = array2;
 }
+
 
 static int *dividing_long_by_short(int *array, int length, int b, int base, int *new_len) {
     int *array2 = (int*)malloc(sizeof(int) * length);
@@ -47,6 +50,7 @@ static int *dividing_long_by_short(int *array, int length, int b, int base, int 
     return res;
 }
 
+
 static void *get_array_of_digits(PyObject *str, int base, my_number* a) {
     long length =  PyObject_Length(str);
     PyObject *pItem = PyObject_GetItem(str, Py_BuildValue("i", 0));
@@ -64,6 +68,7 @@ static void *get_array_of_digits(PyObject *str, int base, my_number* a) {
     a->sign = bo ? -1 : 1;
     a->number = dividing_long_by_short(array, length-bo, base, 10, &(a->length));
 }
+
 
 PyObject* new_number_from_py(PyObject* self, PyObject* args) {
     my_number* a = PyObject_NEW(my_number, &my_number_Type);
@@ -88,11 +93,13 @@ PyObject* new_number_from_py(PyObject* self, PyObject* args) {
     return (PyObject*)a;
 }
 
+
 void delete_my_number(my_number* self) {
     free(self->number);
     Py_XDECREF(self);
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
+
 
 PyObject* my_number_repr(PyObject* self)
 {
@@ -116,6 +123,7 @@ PyObject* my_number_repr(PyObject* self)
     return repr;
 }
 
+
 int my_number_comparator(my_number* a, my_number* b) {
     if (a->sign > 0 && b->sign < 0) return 0;
     if (a->sign < 0 && b->sign > 0) return 1;
@@ -133,6 +141,7 @@ int my_number_comparator(my_number* a, my_number* b) {
     return (a->sign > 0 && b->sign > 0) ? b0 : !b0;
 }
 
+
 PyObject* my_number_tp_richcompare(PyObject *self, PyObject *other, int op) {
     int b1 = my_number_comparator(self, other);
     int b2 = my_number_comparator(other, self);
@@ -143,6 +152,7 @@ PyObject* my_number_tp_richcompare(PyObject *self, PyObject *other, int op) {
     if (op == Py_GT) return b2 ? Py_True : Py_False;
     if (op == Py_GE) return !b1 ? Py_True : Py_False;
 }
+
 
 PyObject* _my_number_add(my_number* a, my_number* b) {
     my_number* c = PyObject_NEW(my_number, &my_number_Type);
@@ -166,15 +176,13 @@ PyObject* _my_number_add(my_number* a, my_number* b) {
         free(array);
         array = array2;
     }
-//    for (int i = 0; i < len; ++i) {
-//        printf("%d\n",array[i]);
-//    }
     c->number = array;
     c->length = len;
     c->sign = 1;
     c->base = base;
     return c;
 }
+
 
 PyObject* my_number_absolute(PyObject* self) {
     my_number* a = (my_number*)self;
@@ -187,6 +195,7 @@ PyObject* my_number_absolute(PyObject* self) {
     return c;
 }
 
+
 PyObject* my_number_negative(PyObject* self) {
     my_number* a = (my_number*)self;
     my_number* c = PyObject_NEW(my_number, &my_number_Type);
@@ -197,6 +206,7 @@ PyObject* my_number_negative(PyObject* self) {
     for (int i = 0; i < c->length; ++i) c->number[i] = a->number[i];
     return c;
 }
+
 
 my_number* _my_number_sub(my_number* a, my_number* b) {
     my_number* c = PyObject_NEW(my_number, &my_number_Type);
@@ -242,6 +252,7 @@ my_number* _my_number_sub(my_number* a, my_number* b) {
     return c;
 }
 
+
 PyObject* my_number_add(PyObject* self, PyObject* another) {
     my_number *a = (my_number*)self, *b = (my_number*)another;
     if (a->base != b->base) {
@@ -270,10 +281,12 @@ PyObject* my_number_add(PyObject* self, PyObject* another) {
     }
 }
 
+
 PyObject* my_number_sub(PyObject* self, PyObject* another) {
     my_number *a = (my_number*)self, *b = my_number_negative(another);
     return my_number_add(a, b);
 }
+
 
 static PyNumberMethods my_number_as_number = {
     .nb_add = my_number_add,
@@ -282,6 +295,7 @@ static PyNumberMethods my_number_as_number = {
     .nb_multiply = 0,
     .nb_absolute = my_number_absolute,
 };
+
 
 PyTypeObject my_number_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
