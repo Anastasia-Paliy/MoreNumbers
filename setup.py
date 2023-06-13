@@ -6,10 +6,10 @@ description = 'A module for working with numbers in different number systems wit
 module1 = Extension(name, sources=sources)
 
 setup(
-    name=name,
-    version='1.0',
-    description=description,
-    ext_modules=[module1]
+    name = name,
+    version = '1.0',
+    description = description,
+    ext_modules = [module1]
 )
 
 # python setup.py install

@@ -1,7 +1,9 @@
 #include "main.h"
 
-// методы модуля
-static PyMethodDef own_methods[] = {
+
+// Module methods
+static PyMethodDef own_methods[] =
+{
     {
         "new_number",
         new_number_from_py,
@@ -12,7 +14,9 @@ static PyMethodDef own_methods[] = {
 };
 
 
-static PyModuleDef simple_module = {
+// Module definition
+static PyModuleDef simple_module =
+{
     PyModuleDef_HEAD_INIT,
     "more_numbers",
     "documentation",
@@ -21,11 +25,10 @@ static PyModuleDef simple_module = {
 };
 
 
-// инициализация модуля
+// Module initialization
 PyMODINIT_FUNC PyInit_more_numbers(void)
 {
-    PyObject* module;
-    module = PyModule_Create(&simple_module);
+    PyObject* module = PyModule_Create(&simple_module);
     if (module==NULL)
         return NULL;
 
